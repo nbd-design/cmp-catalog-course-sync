@@ -1,0 +1,28 @@
+{
+  "name": "hubspot-course-sync",
+  "version": "1.0.0",
+  "description": "Automated course catalog synchronization with HubSpot HubDB",
+  "main": "src/sync.js",
+  "scripts": {
+    "sync": "node src/sync.js",
+    "cleanup": "node src/cleanup.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "hubspot",
+    "hubdb",
+    "course-catalog",
+    "automation",
+    "sync"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+
