@@ -293,6 +293,11 @@ Generated from: Course name, Vendor name, Fields of study, Level, Delivery metho
 - Verify the table has matching column names
 - Check that the table was published after sync
 
+**More courses in HubDB than in the API**
+- This is now automatically handled! The sync will delete stale courses
+- Check the sync logs for "Deleted" count
+- The catalog now stays perfectly in sync with the API source
+
 ### Debug Mode
 
 For more verbose logging, you can modify `src/utils/logger.js` to add debug statements.

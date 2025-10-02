@@ -39,16 +39,22 @@ jobs:
         run: |
           if [ -f sync-output.log ]; then
             # Extract key metrics from the log
-            TOTAL=$(grep -oP "(?<=Total courses: )\d+" sync-output.log || echo "N/A")
+            API_COURSES=$(grep -oP "(?<=API courses: )\d+" sync-output.log || echo "N/A")
+            HUBDB_BEFORE=$(grep -oP "(?<=HubDB before sync: )\d+" sync-output.log || echo "N/A")
+            HUBDB_AFTER=$(grep -oP "(?<=HubDB after sync: )\d+" sync-output.log || echo "N/A")
             CREATED=$(grep -oP "(?<=Created: )\d+" sync-output.log || echo "N/A")
             UPDATED=$(grep -oP "(?<=Updated: )\d+" sync-output.log || echo "N/A")
+            DELETED=$(grep -oP "(?<=Deleted: )\d+" sync-output.log || echo "N/A")
             FAILED=$(grep -oP "(?<=Failed: )\d+" sync-output.log || echo "N/A")
             SUCCESS_RATE=$(grep -oP "(?<=Success rate: )[0-9.]+%" sync-output.log || echo "N/A")
             DURATION=$(grep -oP "(?<=Duration: )[0-9.]+s" sync-output.log || echo "N/A")
             
-            echo "total=$TOTAL" >> $GITHUB_OUTPUT
+            echo "api_courses=$API_COURSES" >> $GITHUB_OUTPUT
+            echo "hubdb_before=$HUBDB_BEFORE" >> $GITHUB_OUTPUT
+            echo "hubdb_after=$HUBDB_AFTER" >> $GITHUB_OUTPUT
             echo "created=$CREATED" >> $GITHUB_OUTPUT
             echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+            echo "deleted=$DELETED" >> $GITHUB_OUTPUT
             echo "failed=$FAILED" >> $GITHUB_OUTPUT
             echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
             echo "duration=$DURATION" >> $GITHUB_OUTPUT
@@ -74,10 +80,17 @@ jobs:
             Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             
             Sync Results:
-            - Total Courses: ${{ steps.summary.outputs.total }}
+            - API Courses: ${{ steps.summary.outputs.api_courses }}
+            - HubDB Before: ${{ steps.summary.outputs.hubdb_before }}
+            - HubDB After: ${{ steps.summary.outputs.hubdb_after }}
+            
+            Operations:
             - Created: ${{ steps.summary.outputs.created }}
             - Updated: ${{ steps.summary.outputs.updated }}
+            - Deleted: ${{ steps.summary.outputs.deleted }}
             - Failed: ${{ steps.summary.outputs.failed }}
+            
+            Performance:
             - Success Rate: ${{ steps.summary.outputs.success_rate }}
             - Duration: ${{ steps.summary.outputs.duration }}
             
@@ -96,12 +109,24 @@ jobs:
             echo "### ❌ Status: Failed" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📈 Catalog Status" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Total Courses | ${{ steps.summary.outputs.total }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Courses | ${{ steps.summary.outputs.api_courses }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| HubDB Before Sync | ${{ steps.summary.outputs.hubdb_before }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| HubDB After Sync | ${{ steps.summary.outputs.hubdb_after }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🔄 Operations" >> $GITHUB_STEP_SUMMARY
+          echo "| Operation | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Created | ${{ steps.summary.outputs.created }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Updated | ${{ steps.summary.outputs.updated }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deleted | ${{ steps.summary.outputs.deleted }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Failed | ${{ steps.summary.outputs.failed }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### ⚡ Performance" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Success Rate | ${{ steps.summary.outputs.success_rate }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Duration | ${{ steps.summary.outputs.duration }} |" >> $GITHUB_STEP_SUMMARY
 

@@ -19,6 +19,7 @@ async function syncCoursesToHubDB() {
     total: 0,
     created: 0,
     updated: 0,
+    deleted: 0,
     failed: 0
   };
 
@@ -55,9 +56,17 @@ async function syncCoursesToHubDB() {
     }
 
     stats.total = courses.length;
-    logger.info('sync', `Starting sync for ${courses.length} courses...`);
+    logger.info('sync', `Starting sync for ${courses.length} courses from API...`);
 
-    // 6. Process each course
+    // 6. Fetch existing rows from HubDB
+    logger.info('hubdb', 'Fetching existing rows from HubDB...');
+    const existingRows = await hubspot.getAllRows(CATALOG_TABLE_ID);
+    logger.info('hubdb', `Found ${existingRows.length} existing rows in HubDB`);
+
+    // 7. Create a Set of API url_keys for fast lookup
+    const apiUrlKeys = new Set(courses.map(c => c.url_key));
+
+    // 8. Process each course (create/update)
     for (let i = 0; i < courses.length; i++) {
       const course = courses[i];
       const progress = `[${i + 1}/${courses.length}]`;
@@ -94,18 +103,47 @@ async function syncCoursesToHubDB() {
       }
     }
 
-    // 7. Publish table
+    // 9. Delete courses that exist in HubDB but not in API (cleanup stale data)
+    logger.info('cleanup', 'Checking for courses to remove...');
+    for (const row of existingRows) {
+      const urlKey = row.values?.url_key;
+      if (urlKey && !apiUrlKeys.has(urlKey)) {
+        try {
+          const success = await hubspot.deleteRow(CATALOG_TABLE_ID, row.id);
+          if (success) {
+            logger.success('delete', `Removed stale course: ${row.values?.title || row.name || urlKey}`);
+            stats.deleted++;
+          }
+        } catch (error) {
+          logger.error('delete', `Failed to delete stale course: ${urlKey}`, error);
+        }
+      }
+    }
+
+    if (stats.deleted > 0) {
+      logger.info('cleanup', `Removed ${stats.deleted} stale courses from HubDB`);
+    } else {
+      logger.info('cleanup', 'No stale courses found - catalog is in sync');
+    }
+
+    // 10. Publish table
     logger.info('publish', 'Publishing table to make changes live...');
     await hubspot.publishTable(CATALOG_TABLE_ID);
 
-    // 8. Summary
+    // 11. Summary
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    const successCount = stats.created + stats.updated + stats.deleted;
+    const totalOperations = stats.total + stats.deleted;
+    
     logger.complete({
-      'Total courses': stats.total,
+      'API courses': stats.total,
+      'HubDB before sync': existingRows.length,
       'Created': stats.created,
       'Updated': stats.updated,
+      'Deleted': stats.deleted,
       'Failed': stats.failed,
-      'Success rate': `${(((stats.created + stats.updated) / stats.total) * 100).toFixed(1)}%`,
+      'HubDB after sync': existingRows.length + stats.created - stats.deleted,
+      'Success rate': `${((successCount / totalOperations) * 100).toFixed(1)}%`,
       'Duration': `${duration}s`
     });
 
