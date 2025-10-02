@@ -103,9 +103,7 @@ Get email reports with sync results!
    - `SMTP_PASSWORD` = (app password from step 1)
    - `NOTIFICATION_EMAIL` = where to send reports
 
-By default, you'll only get emails on failures. To get reports for every sync, add a variable:
-- Go to Settings → Secrets and variables → Actions → **Variables** tab
-- Create: `SEND_EMAIL_REPORTS` = `true`
+You'll receive email reports after every sync with detailed stats!
 
 **See [EMAIL_SETUP.md](EMAIL_SETUP.md) for detailed setup instructions!**
 

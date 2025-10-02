@@ -38,17 +38,9 @@ Add these secrets:
 | `SMTP_FROM` | Your Gmail address | your.email@gmail.com |
 | `NOTIFICATION_EMAIL` | Where to send reports | recipient@example.com |
 
-#### Step 3: Enable Email Reports (Optional)
+#### Step 3: Done!
 
-If you want to receive emails for **every sync** (not just failures):
-
-1. Go to Settings → Secrets and variables → Actions → **Variables** tab
-2. Click "New repository variable"
-3. Name: `SEND_EMAIL_REPORTS`
-4. Value: `true`
-5. Click "Add variable"
-
-**Note:** By default, emails are only sent on failures. Set this variable to `true` to receive reports for every sync.
+That's it! You'll now receive email reports after **every sync** (both successful and failed) with detailed statistics.
 
 ---
 
@@ -150,16 +142,15 @@ View detailed logs: https://github.com/youruser/repo/actions/runs/123456
 
 ## Configuration Options
 
-### Send Email on Every Sync
+### Email Reports
 
-By default, emails are only sent when the sync **fails**. To receive reports for every sync:
-
-1. Go to Settings → Secrets and variables → Actions → **Variables** tab
-2. Create variable: `SEND_EMAIL_REPORTS` = `true`
-
-### Send Email Only on Failures
-
-This is the **default behavior**. Just don't set the `SEND_EMAIL_REPORTS` variable (or set it to `false`).
+By **default**, you'll receive email reports after **every sync** (both successful and failed) with complete statistics including:
+- Total courses processed
+- Number created
+- Number updated  
+- Number failed
+- Success rate
+- Duration
 
 ### Multiple Recipients
 

@@ -144,9 +144,9 @@ Get automated email reports with sync results! 📧
 
 ### Features
 - **Detailed metrics** - Total, created, updated, failed courses
-- **Success/failure status** - Know immediately if something goes wrong
+- **Success/failure status** - Get reports for every sync with complete stats
 - **Direct links** - Click through to detailed logs
-- **Configurable** - Send always or only on failures
+- **Always informed** - Reports sent after every sync (successful or failed)
 
 ### Quick Setup (Gmail)
 
@@ -163,11 +163,7 @@ Get automated email reports with sync results! 📧
    NOTIFICATION_EMAIL = recipient@example.com
    ```
 
-3. **Done!** You'll receive emails when syncs fail
-
-4. **Optional:** To receive reports for every sync (not just failures):
-   - Go to Settings → Secrets and variables → Actions → **Variables** tab
-   - Create variable: `SEND_EMAIL_REPORTS` = `true`
+3. **Done!** You'll receive email reports after every sync (both successful and failed)
 
 ### Detailed Setup Guide
 
