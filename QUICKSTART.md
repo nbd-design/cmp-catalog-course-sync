@@ -88,6 +88,26 @@ Run it manually to verify:
 2. Click "Daily Course Sync"
 3. Click "Run workflow" → "Run workflow"
 4. Watch it run successfully! ✅
+5. Check the **Summary** tab for a beautiful report with metrics!
+
+## Step 6 (Optional): Set Up Email Notifications 📧
+
+Get email reports with sync results!
+
+### Quick Gmail Setup:
+1. Create a Gmail App Password at https://myaccount.google.com/apppasswords
+2. Add these secrets to GitHub (Settings → Secrets → Actions):
+   - `SMTP_SERVER` = `smtp.gmail.com`
+   - `SMTP_PORT` = `587`
+   - `SMTP_USERNAME` = your Gmail address
+   - `SMTP_PASSWORD` = (app password from step 1)
+   - `NOTIFICATION_EMAIL` = where to send reports
+
+By default, you'll only get emails on failures. To get reports for every sync, add a variable:
+- Go to Settings → Secrets and variables → Actions → **Variables** tab
+- Create: `SEND_EMAIL_REPORTS` = `true`
+
+**See [EMAIL_SETUP.md](EMAIL_SETUP.md) for detailed setup instructions!**
 
 ## Optional: Clean Up Test Data
 

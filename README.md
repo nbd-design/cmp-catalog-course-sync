@@ -6,8 +6,10 @@ Automated synchronization of course catalog data from a Course API to HubSpot Hu
 
 ✅ **Automated Daily Sync** - Runs automatically every day via GitHub Actions  
 ✅ **Manual Trigger** - Run on-demand from GitHub Actions UI  
+✅ **Email Reports** - Automated email notifications with sync results ([Setup Guide](EMAIL_SETUP.md))  
 ✅ **Smart Upsert** - Creates new courses or updates existing ones  
 ✅ **Comprehensive Logging** - Detailed execution logs with emoji indicators  
+✅ **Job Summaries** - Beautiful summaries in GitHub Actions UI  
 ✅ **Error Handling** - Graceful error handling with detailed error messages  
 ✅ **Clean Architecture** - Well-organized code with separate utilities  
 ✅ **Secure** - Uses GitHub Secrets for API token management  
@@ -19,6 +21,7 @@ Automated synchronization of course catalog data from a Course API to HubSpot Hu
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [GitHub Actions Setup](#github-actions-setup)
+- [Email Notifications](#email-notifications)
 - [Project Structure](#project-structure)
 - [Scripts](#scripts)
 - [Data Mapping](#data-mapping)
@@ -134,6 +137,72 @@ To run the sync manually:
 2. Click "Daily Course Sync" workflow
 3. Click "Run workflow" button
 4. Select branch and click "Run workflow"
+
+## Email Notifications
+
+Get automated email reports with sync results! 📧
+
+### Features
+- **Detailed metrics** - Total, created, updated, failed courses
+- **Success/failure status** - Know immediately if something goes wrong
+- **Direct links** - Click through to detailed logs
+- **Configurable** - Send always or only on failures
+
+### Quick Setup (Gmail)
+
+1. **Create Gmail App Password**
+   - Go to [Google App Passwords](https://myaccount.google.com/apppasswords)
+   - Generate a password for "HubSpot Sync"
+
+2. **Add GitHub Secrets** (Settings → Secrets and variables → Actions)
+   ```
+   SMTP_SERVER = smtp.gmail.com
+   SMTP_PORT = 587
+   SMTP_USERNAME = your.email@gmail.com
+   SMTP_PASSWORD = (app password from step 1)
+   NOTIFICATION_EMAIL = recipient@example.com
+   ```
+
+3. **Done!** You'll receive emails when syncs fail
+
+4. **Optional:** To receive reports for every sync (not just failures):
+   - Go to Settings → Secrets and variables → Actions → **Variables** tab
+   - Create variable: `SEND_EMAIL_REPORTS` = `true`
+
+### Detailed Setup Guide
+
+See **[EMAIL_SETUP.md](EMAIL_SETUP.md)** for:
+- Gmail setup (step-by-step)
+- SendGrid setup (100 free emails/day)
+- Microsoft 365 / Outlook setup
+- Custom SMTP server setup
+- Troubleshooting tips
+
+### Example Email Report
+
+```
+Subject: ✅ HubSpot Course Sync - Success
+
+HubSpot Course Sync Report
+==========================================
+
+Status: ✅ SUCCESS
+Date: 2025-10-02T02:00:00Z
+
+Sync Results:
+- Total Courses: 142
+- Created: 8
+- Updated: 134
+- Failed: 0
+- Success Rate: 100.0%
+- Duration: 45.32s
+
+View detailed logs: [link to GitHub Actions run]
+```
+
+### GitHub Job Summary
+
+Even without email, you'll see a beautiful summary in the Actions UI after each run! 
 
 ## Project Structure
 

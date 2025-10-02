@@ -25,17 +25,87 @@ jobs:
         run: npm install
 
       - name: Run sync script
+        id: sync
+        continue-on-error: true
         env:
           HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
-        run: npm run sync
+        run: |
+          npm run sync 2>&1 | tee sync-output.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
-      - name: Report sync status
+      - name: Extract sync summary
+        id: summary
         if: always()
         run: |
-          if [ $? -eq 0 ]; then
-            echo "✅ Sync completed successfully"
-          else
-            echo "❌ Sync failed"
-            exit 1
+          if [ -f sync-output.log ]; then
+            # Extract key metrics from the log
+            TOTAL=$(grep -oP "(?<=Total courses: )\d+" sync-output.log || echo "N/A")
+            CREATED=$(grep -oP "(?<=Created: )\d+" sync-output.log || echo "N/A")
+            UPDATED=$(grep -oP "(?<=Updated: )\d+" sync-output.log || echo "N/A")
+            FAILED=$(grep -oP "(?<=Failed: )\d+" sync-output.log || echo "N/A")
+            SUCCESS_RATE=$(grep -oP "(?<=Success rate: )[0-9.]+%" sync-output.log || echo "N/A")
+            DURATION=$(grep -oP "(?<=Duration: )[0-9.]+s" sync-output.log || echo "N/A")
+            
+            echo "total=$TOTAL" >> $GITHUB_OUTPUT
+            echo "created=$CREATED" >> $GITHUB_OUTPUT
+            echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+            echo "failed=$FAILED" >> $GITHUB_OUTPUT
+            echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
+            echo "duration=$DURATION" >> $GITHUB_OUTPUT
           fi
+
+      - name: Send email notification
+        if: always() && (vars.SEND_EMAIL_REPORTS == 'true' || steps.sync.outputs.exit_code != '0')
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT || 587 }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: ${{ steps.sync.outputs.exit_code == '0' && '✅ HubSpot Course Sync - Success' || '❌ HubSpot Course Sync - Failed' }}
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.SMTP_FROM || secrets.SMTP_USERNAME }}
+          body: |
+            HubSpot Course Sync Report
+            ==========================================
+            
+            Status: ${{ steps.sync.outputs.exit_code == '0' && '✅ SUCCESS' || '❌ FAILED' }}
+            Date: ${{ github.event.repository.updated_at }}
+            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            Sync Results:
+            - Total Courses: ${{ steps.summary.outputs.total }}
+            - Created: ${{ steps.summary.outputs.created }}
+            - Updated: ${{ steps.summary.outputs.updated }}
+            - Failed: ${{ steps.summary.outputs.failed }}
+            - Success Rate: ${{ steps.summary.outputs.success_rate }}
+            - Duration: ${{ steps.summary.outputs.duration }}
+            
+            ==========================================
+            
+            View detailed logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Create job summary
+        if: always()
+        run: |
+          echo "## 📊 Course Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.sync.outputs.exit_code }}" == "0" ]; then
+            echo "### ✅ Status: Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Status: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Courses | ${{ steps.summary.outputs.total }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Created | ${{ steps.summary.outputs.created }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Updated | ${{ steps.summary.outputs.updated }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Failed | ${{ steps.summary.outputs.failed }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Success Rate | ${{ steps.summary.outputs.success_rate }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Duration | ${{ steps.summary.outputs.duration }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail job if sync failed
+        if: steps.sync.outputs.exit_code != '0'
+        run: exit 1
 
