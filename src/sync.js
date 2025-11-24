@@ -105,23 +105,54 @@ async function syncCoursesToHubDB() {
 
     // 9. Delete courses that exist in HubDB but not in API (cleanup stale data)
     logger.info('cleanup', 'Checking for courses to remove...');
+    
+    // Debug: Log first row structure to understand the data
+    if (existingRows.length > 0) {
+      logger.info('debug', 'Sample row structure:');
+      logger.info('debug', `  - id: ${existingRows[0].id}`);
+      logger.info('debug', `  - path: ${existingRows[0].path}`);
+      logger.info('debug', `  - name: ${existingRows[0].name}`);
+      logger.info('debug', `  - values.url_key: ${existingRows[0].values?.url_key}`);
+      logger.info('debug', `  - keys in values: ${Object.keys(existingRows[0].values || {}).join(', ')}`);
+    }
+    
+    let staleCourses = [];
     for (const row of existingRows) {
-      const urlKey = row.values?.url_key;
+      // Try multiple ways to get url_key
+      const urlKey = row.values?.url_key || row.path || row.values?.path;
+      
       if (urlKey && !apiUrlKeys.has(urlKey)) {
-        try {
-          const success = await hubspot.deleteRow(CATALOG_TABLE_ID, row.id);
-          if (success) {
-            logger.success('delete', `Removed stale course: ${row.values?.title || row.name || urlKey}`);
-            stats.deleted++;
-          }
-        } catch (error) {
-          logger.error('delete', `Failed to delete stale course: ${urlKey}`, error);
-        }
+        staleCourses.push({
+          id: row.id,
+          urlKey: urlKey,
+          title: row.values?.title || row.name || 'Unknown'
+        });
       }
     }
 
-    if (stats.deleted > 0) {
-      logger.info('cleanup', `Removed ${stats.deleted} stale courses from HubDB`);
+    logger.info('cleanup', `Found ${staleCourses.length} stale courses to remove`);
+    
+    if (staleCourses.length > 0) {
+      logger.info('cleanup', 'Sample stale courses:');
+      staleCourses.slice(0, 5).forEach(course => {
+        logger.info('cleanup', `  - ${course.title} (${course.urlKey})`);
+      });
+      
+      for (const course of staleCourses) {
+        try {
+          const success = await hubspot.deleteRow(CATALOG_TABLE_ID, course.id);
+          if (success) {
+            logger.success('delete', `Removed: ${course.title}`);
+            stats.deleted++;
+          } else {
+            logger.warn('delete', `Delete returned false for: ${course.title}`);
+          }
+        } catch (error) {
+          logger.error('delete', `Failed to delete: ${course.title}`, error);
+        }
+      }
+      
+      logger.info('cleanup', `Removed ${stats.deleted}/${staleCourses.length} stale courses`);
     } else {
       logger.info('cleanup', 'No stale courses found - catalog is in sync');
     }

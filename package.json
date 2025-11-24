@@ -5,6 +5,7 @@
   "main": "src/sync.js",
   "scripts": {
     "sync": "node src/sync.js",
+    "sync:full-replace": "node src/sync-full-replace.js",
     "cleanup": "node src/cleanup.js",
     "test": "echo \"No tests yet\" && exit 0"
   },

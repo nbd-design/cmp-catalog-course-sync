@@ -33,8 +33,14 @@ HUBSPOT_PRIVATE_APP_TOKEN=pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 Run the sync script:
 
 ```bash
+# Recommended: Differential sync (faster, smarter)
 npm run sync
+
+# Alternative: Full replace (simpler, guaranteed clean)
+npm run sync:full-replace
 ```
+
+**See [SYNC_STRATEGIES.md](SYNC_STRATEGIES.md) for comparison**
 
 You should see output like:
 ```
