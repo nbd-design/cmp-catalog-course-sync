@@ -1,9 +1,9 @@
 name: Daily Course Sync
 
 on:
-  # Run daily at 2 AM UTC
+  # Run Monday, Wednesday, Friday at 2 AM UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * 1,3,5'
   
   # Allow manual triggering from Actions tab
   workflow_dispatch:
