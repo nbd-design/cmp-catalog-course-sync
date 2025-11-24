@@ -30,7 +30,7 @@ jobs:
         env:
           HUBSPOT_PRIVATE_APP_TOKEN: ${{ secrets.HUBSPOT_PRIVATE_APP_TOKEN }}
         run: |
-          npm run sync 2>&1 | tee sync-output.log
+          npm run sync:two-step 2>&1 | tee sync-output.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Extract sync summary

@@ -6,6 +6,7 @@
   "scripts": {
     "sync": "node src/sync.js",
     "sync:full-replace": "node src/sync-full-replace.js",
+    "sync:two-step": "node src/sync-two-step.js",
     "cleanup": "node src/cleanup.js",
     "test": "echo \"No tests yet\" && exit 0"
   },

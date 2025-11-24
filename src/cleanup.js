@@ -80,7 +80,10 @@ async function cleanupTables() {
 
 // Run if executed directly
 if (require.main === module) {
-  cleanupTables();
+  cleanupTables().catch(error => {
+    console.error('Cleanup failed:', error);
+    process.exit(1);
+  });
 }
 
 module.exports = { cleanupTables };

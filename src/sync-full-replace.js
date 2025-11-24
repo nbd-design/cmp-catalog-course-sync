@@ -68,7 +68,12 @@ async function syncCoursesFullReplace() {
     
     logger.success('cleanup', `Deleted ${stats.deletedOld} rows`);
 
-    // 5. STEP 2: Fetch all courses from API
+    // 5. CRITICAL: Publish deletions before creating new rows
+    logger.info('publish', 'Publishing deletions (required before creating new rows)...');
+    await hubspot.publishTable(CATALOG_TABLE_ID);
+    logger.success('publish', 'Deletions published - table is now empty');
+
+    // 6. STEP 2: Fetch all courses from API
     logger.info('api', 'STEP 2: Fetching courses from API...');
     const courses = await fetchAllCourses();
     if (courses.length === 0) {
@@ -78,7 +83,7 @@ async function syncCoursesFullReplace() {
 
     logger.info('sync', `STEP 3: Creating ${courses.length} fresh rows...`);
 
-    // 6. STEP 3: Create all courses as new rows
+    // 7. STEP 3: Create all courses as new rows
     for (let i = 0; i < courses.length; i++) {
       const course = courses[i];
       const progress = `[${i + 1}/${courses.length}]`;
@@ -101,8 +106,8 @@ async function syncCoursesFullReplace() {
       }
     }
 
-    // 7. STEP 4: Publish table
-    logger.info('publish', 'STEP 4: Publishing table to make changes live...');
+    // 8. STEP 4: Publish table (final publish with new courses)
+    logger.info('publish', 'STEP 4: Publishing new courses to make them live...');
     await hubspot.publishTable(CATALOG_TABLE_ID);
 
     // 8. Summary
@@ -125,7 +130,10 @@ async function syncCoursesFullReplace() {
 
 // Run if executed directly
 if (require.main === module) {
-  syncCoursesFullReplace();
+  syncCoursesFullReplace().catch(error => {
+    console.error('Sync failed:', error);
+    process.exit(1);
+  });
 }
 
 // Export for use in other modules

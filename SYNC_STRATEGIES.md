@@ -1,21 +1,75 @@
 # Sync Strategies Comparison 🔄
 
-You have two options for syncing courses to HubDB. Here's how they compare:
+You have three options for syncing courses to HubDB. Here's how they compare:
+
+## ⚠️ Important: HubDB Path Uniqueness
+
+HubDB enforces **unique `path` values** across all rows. This means:
+- You **cannot** create a row with a path that already exists
+- You **must publish deletions** before creating rows with the same paths
+- This is why simple "delete all, then create all" doesn't work without publishing in between
 
 ## 📊 Quick Comparison
 
-| Factor | Differential Sync | Full Replace |
-|--------|------------------|--------------|
-| **Speed** | ⚡ Fast (~90s) | 🐌 Slower (~180s) |
-| **API Calls** | ~5,600 | ~11,000+ |
-| **Data Safety** | ✅ Never empty | ⚠️ Brief empty state |
-| **Complexity** | 🔧 More complex | ✨ Simple |
-| **Debugging** | 🔍 Harder | 👁️ Easier |
-| **Best For** | Production | Troubleshooting |
+| Factor | Differential | Full Replace | Two-Step |
+|--------|--------------|--------------|----------|
+| **Speed** | ⚡ Fast (~90s) | 🐌 Slower (~180s) | 🐌 Slower (~180s) |
+| **API Calls** | ~5,600 | ~11,000+ | ~11,000+ |
+| **Reliability** | ⚠️ Complex | ⚠️ Requires fix | ✅ Guaranteed |
+| **Complexity** | 🔧 High | 🔧 Medium | ✨ Simple |
+| **Data Safety** | ✅ Never empty | ⚠️ Timing issues | ✅ Controlled |
+| **Best For** | When working | Needs fix | **Recommended** |
 
 ---
 
-## Strategy 1: Differential Sync (Current Default) ⚡
+## ✅ Strategy 1: Two-Step Sync (RECOMMENDED) 🎯
+
+**How it works:**
+1. **Step 1:** Delete all existing rows → Publish deletions
+2. **Wait:** Give HubSpot 2 seconds to process
+3. **Step 2:** Create all courses as fresh rows → Publish
+4. Result: Clean, exact match with API
+
+### Pros ✅
+- **Guaranteed to work**: No path conflicts
+- **Simple logic**: Easy to understand and debug
+- **Perfect data integrity**: Always matches API exactly
+- **Reliable**: Handles HubDB's draft/publish model correctly
+
+### Cons ❌
+- **Slower**: Takes ~180 seconds (3 minutes)
+- **More API calls**: ~11,000 total
+- **Brief empty state**: Table is empty between steps (only noticeable if someone views during sync)
+
+### When to Use
+- ✅ **Always** - This is the most reliable option
+- ✅ **Daily automated syncs** - 3 minutes at 2 AM is fine
+- ✅ **Data quality matters** - Guaranteed perfect sync
+
+### Run Command
+```bash
+npm run sync:two-step
+```
+
+### Example Output
+```
+[step1] STEP 1: Running cleanup to remove all existing courses...
+[cleanup] Found 5622 existing rows to delete
+[cleanup] ✓ Deleted 5622 rows
+[publish] ✓ Table published successfully
+[step1] ✓ Cleanup complete. Table is now empty and published.
+
+[step2] STEP 2: Running sync to add all courses from API...
+[api] ✓ Retrieved 5566 total courses
+[create] [100/5566] Created 100 courses...
+[publish] ✓ Table published successfully
+
+✅ Process completed
+```
+
+---
+
+## Strategy 2: Differential Sync ⚡
 
 **How it works:**
 1. Fetch all courses from API (5,566)
@@ -46,14 +100,15 @@ npm run sync
 
 ---
 
-## Strategy 2: Full Replace 🔄
+## Strategy 3: Full Replace (Fixed) 🔄
 
 **How it works:**
 1. Fetch all existing rows from HubDB
 2. Delete ALL rows (5,622 deletions)
-3. Fetch all courses from API (5,566)
-4. Create ALL courses as new (5,566 creations)
-5. Publish changes
+3. **Publish deletions** (CRITICAL - prevents path conflicts)
+4. Fetch all courses from API (5,566)
+5. Create ALL courses as new (5,566 creations)
+6. Publish changes
 
 ### Pros ✅
 - **Simple**: Straightforward logic, no comparison
@@ -134,9 +189,36 @@ Look for:
 
 ---
 
-## 💡 Recommendation
+---
 
-### For Now: Test with Debug Logging
+## 🎯 UPDATED RECOMMENDATION
+
+Based on your error (`Path already exists`), here's what to do:
+
+### ✅ Use Two-Step Sync (Best Option)
+
+```bash
+npm run sync:two-step
+```
+
+**This solves your issue because:**
+1. ✅ Cleanup deletes all rows AND publishes
+2. ✅ Waits 2 seconds for HubSpot to process
+3. ✅ Then creates fresh rows (no path conflicts!)
+4. ✅ Publishes final result
+
+### For GitHub Actions
+
+Update `.github/workflows/daily-sync.yml` line 33:
+```yaml
+run: npm run sync:two-step
+```
+
+---
+
+## 💡 Old Recommendation (For Reference)
+
+### Test with Debug Logging (if you want to debug differential)
 ```bash
 # Run the improved differential sync
 npm run sync

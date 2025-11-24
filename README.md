@@ -224,9 +224,12 @@ hubspot-course-sync/
 
 | Command | Description |
 |---------|-------------|
+| `npm run sync:two-step` | **Recommended:** Two-step sync (cleanup + sync) |
 | `npm run sync` | Differential sync (smart update/create/delete) |
 | `npm run sync:full-replace` | Full replace (delete all, then re-upload) |
 | `npm run cleanup` | Delete all rows from HubDB table |
+
+**Recommended:** Use `npm run sync:two-step` for reliable, conflict-free syncing.
 
 See **[SYNC_STRATEGIES.md](SYNC_STRATEGIES.md)** for a detailed comparison of sync approaches.
 

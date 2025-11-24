@@ -28,17 +28,19 @@ HUBSPOT_PRIVATE_APP_TOKEN=pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 4. Enable scope: `cms.hubdb` (Read and Write)
 5. Create and copy the token
 
-## Step 3: Test the Sync Locally (2 min)
+## Step 3: Test the Sync Locally (3 min)
 
 Run the sync script:
 
 ```bash
-# Recommended: Differential sync (faster, smarter)
-npm run sync
+# ✅ Recommended: Two-step sync (most reliable)
+npm run sync:two-step
 
-# Alternative: Full replace (simpler, guaranteed clean)
-npm run sync:full-replace
+# Alternative: Differential sync (faster but complex)
+npm run sync
 ```
+
+**The two-step sync is most reliable** - it cleans up first, then syncs fresh data.
 
 **See [SYNC_STRATEGIES.md](SYNC_STRATEGIES.md) for comparison**
 
