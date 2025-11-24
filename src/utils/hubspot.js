@@ -54,6 +54,7 @@ class HubSpotClient {
 
   /**
    * Get all rows from a table (with pagination)
+   * Uses the /draft endpoint per HubDB v3 API documentation
    */
   async getAllRows(tableId) {
     try {
@@ -62,16 +63,17 @@ class HubSpotClient {
       const limit = 1000;
       let hasMore = true;
 
+      // Fetch from draft endpoint explicitly (per HubDB v3 API docs)
       while (hasMore) {
         const response = await axios.get(
-          `${HUBSPOT_API_BASE}/cms/v3/hubdb/tables/${tableId}/rows`,
+          `${HUBSPOT_API_BASE}/cms/v3/hubdb/tables/${tableId}/rows/draft`,
           {
             params: { limit, offset },
             headers: this.headers
           }
         );
         
-        const rows = response.data.objects || [];
+        const rows = response.data.results || response.data.objects || [];
         allRows = allRows.concat(rows);
         
         if (rows.length < limit) {
@@ -81,7 +83,7 @@ class HubSpotClient {
         }
       }
 
-      logger.info('fetch', `Retrieved ${allRows.length} rows from table ${tableId}`);
+      logger.info('fetch', `Retrieved ${allRows.length} draft rows from table ${tableId}`);
       return allRows;
     } catch (error) {
       logger.error('fetch', `Failed to fetch rows from table ${tableId}`, error);
@@ -145,18 +147,50 @@ class HubSpotClient {
   }
 
   /**
-   * Delete a row
+   * Delete a row (use /draft endpoint per HubDB v3 API docs)
    */
   async deleteRow(tableId, rowId) {
     try {
       await axios.delete(
-        `${HUBSPOT_API_BASE}/cms/v3/hubdb/tables/${tableId}/rows/${rowId}`,
+        `${HUBSPOT_API_BASE}/cms/v3/hubdb/tables/${tableId}/rows/${rowId}/draft`,
         { headers: this.headers }
       );
       return true;
     } catch (error) {
       logger.error('delete', `Failed to delete row ${rowId}`, error);
       return false;
+    }
+  }
+
+  /**
+   * Batch delete rows using the official purge endpoint (more efficient)
+   * Per HubDB v3 API documentation - much faster than individual deletes
+   */
+  async batchDeleteRows(tableId, rowIds) {
+    try {
+      // HubDB batch purge has a limit, so process in chunks of 100
+      const chunkSize = 100;
+      let deletedCount = 0;
+      
+      for (let i = 0; i < rowIds.length; i += chunkSize) {
+        const chunk = rowIds.slice(i, i + chunkSize);
+        
+        await axios.post(
+          `${HUBSPOT_API_BASE}/cms/v3/hubdb/tables/${tableId}/rows/draft/batch/purge`,
+          {
+            inputs: chunk
+          },
+          { headers: this.headers }
+        );
+        
+        deletedCount += chunk.length;
+        logger.info('batch-delete', `Deleted ${deletedCount}/${rowIds.length} rows`);
+      }
+      
+      return deletedCount;
+    } catch (error) {
+      logger.error('batch-delete', `Failed to batch delete rows`, error);
+      return 0;
     }
   }
 

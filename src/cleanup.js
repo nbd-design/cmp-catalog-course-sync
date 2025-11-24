@@ -47,21 +47,17 @@ async function cleanupTables() {
 
       logger.warn('cleanup', `Found ${rows.length} rows to delete in table ${tableId}`);
 
-      // Delete all rows
-      let deleted = 0;
-      let failed = 0;
-
-      for (const row of rows) {
-        const success = await hubspot.deleteRow(tableId, row.id);
-        if (success) {
-          deleted++;
-          logger.info('delete', `Deleted row ${row.id} (${deleted}/${rows.length})`);
-        } else {
-          failed++;
-        }
+      // Use batch delete for efficiency (per HubDB v3 API documentation)
+      const rowIds = rows.map(row => row.id);
+      logger.info('cleanup', 'Using batch delete for efficient deletion...');
+      
+      const deleted = await hubspot.batchDeleteRows(tableId, rowIds);
+      
+      if (deleted === rows.length) {
+        logger.success('cleanup', `Successfully deleted all ${deleted} rows from table ${tableId}`);
+      } else {
+        logger.warn('cleanup', `Deleted ${deleted}/${rows.length} rows (some may have failed)`);
       }
-
-      logger.info('cleanup', `Table ${tableId} cleanup complete: ${deleted} deleted, ${failed} failed`);
 
       // Publish table
       logger.info('publish', `Publishing table ${tableId}...`);

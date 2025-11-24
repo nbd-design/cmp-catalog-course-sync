@@ -44,29 +44,19 @@ async function syncCoursesFullReplace() {
       process.exit(1);
     }
 
-    // 4. STEP 1: Delete all existing rows
+    // 4. STEP 1: Delete all existing rows using batch delete
     logger.info('cleanup', 'STEP 1: Deleting all existing rows...');
     const existingRows = await hubspot.getAllRows(CATALOG_TABLE_ID);
     logger.info('cleanup', `Found ${existingRows.length} existing rows to delete`);
 
-    for (let i = 0; i < existingRows.length; i++) {
-      const row = existingRows[i];
-      const progress = `[${i + 1}/${existingRows.length}]`;
-      
-      try {
-        const success = await hubspot.deleteRow(CATALOG_TABLE_ID, row.id);
-        if (success) {
-          stats.deletedOld++;
-          if (i % 100 === 0) {
-            logger.info('delete', `${progress} Deleted ${stats.deletedOld} rows...`);
-          }
-        }
-      } catch (error) {
-        logger.error('delete', `${progress} Failed to delete row ${row.id}`, error);
-      }
+    if (existingRows.length > 0) {
+      const rowIds = existingRows.map(row => row.id);
+      logger.info('cleanup', 'Using batch delete for efficient deletion...');
+      stats.deletedOld = await hubspot.batchDeleteRows(CATALOG_TABLE_ID, rowIds);
+      logger.success('cleanup', `Deleted ${stats.deletedOld} rows`);
+    } else {
+      logger.info('cleanup', 'No rows to delete');
     }
-    
-    logger.success('cleanup', `Deleted ${stats.deletedOld} rows`);
 
     // 5. CRITICAL: Publish deletions before creating new rows
     logger.info('publish', 'Publishing deletions (required before creating new rows)...');
